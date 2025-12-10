@@ -50,6 +50,7 @@ export const FileSystemProvider = ({ children }) => {
   });
   const [selectedFile2, setSelectedFile2] = useState(null);
   const [splitView, setSplitView] = useState(false);
+  const [activeEditor, setActiveEditor] = useState(1); // 1 for left, 2 for right
 
   const findNodeById = (tree, id) => {
     if (tree.id === id) return tree;
@@ -139,8 +140,8 @@ export const FileSystemProvider = ({ children }) => {
       if (!splitView) {
         setSelectedFile(node);
       } else {
-        // In split view, alternate between left and right panels
-        if (!selectedFile2) {
+        // In split view, open in the active editor (where cursor last was)
+        if (activeEditor === 2) {
           setSelectedFile2(node);
         } else {
           setSelectedFile(node);
@@ -186,7 +187,9 @@ export const FileSystemProvider = ({ children }) => {
         setSelectedFile,
         setSelectedFile2,
         toggleSplitView,
-        getAllFiles
+        getAllFiles,
+        activeEditor,
+        setActiveEditor
       }}
     >
       {children}

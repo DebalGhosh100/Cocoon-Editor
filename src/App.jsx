@@ -66,7 +66,7 @@ function AppContent() {
   return (
     <div className="app">
       <div className="app-header">
-        <h1>Cocoon Editor</h1>
+        <h1>Cocoon Kickstart IDE</h1>
         <p>All Scripting Requirements • One curl Away</p>
       </div>
       <div className="app-content">

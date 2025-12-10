@@ -6,7 +6,7 @@ import './EditorPanel.css';
 import yaml from 'js-yaml';
 
 const EditorPanel = () => {
-  const { selectedFile, selectedFile2, splitView, updateNodeContent, toggleSplitView, fileSystem } = useFileSystem();
+  const { selectedFile, selectedFile2, splitView, updateNodeContent, toggleSplitView, fileSystem, setActiveEditor } = useFileSystem();
   const editorRef1 = useRef(null);
   const editorRef2 = useRef(null);
   const [leftPaneWidth, setLeftPaneWidth] = useState(50); // percentage
@@ -386,6 +386,7 @@ const EditorPanel = () => {
                 onMount={(editor, monaco) => {
                   editorRef1.current = editor;
                   handleEditorDidMount(editor, monaco);
+                  editor.onDidFocusEditorText(() => setActiveEditor(1));
                 }}
                 options={{
                   minimap: { enabled: false },
@@ -445,6 +446,7 @@ const EditorPanel = () => {
                     onMount={(editor, monaco) => {
                       editorRef2.current = editor;
                       handleEditorDidMount(editor, monaco);
+                      editor.onDidFocusEditorText(() => setActiveEditor(2));
                     }}
                     options={{
                       minimap: { enabled: false },

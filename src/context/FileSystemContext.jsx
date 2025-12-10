@@ -154,6 +154,9 @@ export const FileSystemProvider = ({ children }) => {
     if (splitView) {
       // Closing split view, keep only the left file
       setSelectedFile2(null);
+    } else {
+      // Opening split view, set active editor to right (2) so next file opens there
+      setActiveEditor(2);
     }
     setSplitView(!splitView);
   };

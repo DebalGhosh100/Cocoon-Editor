@@ -352,7 +352,7 @@ const EditorPanel = () => {
                 options={{
                   minimap: { enabled: false },
                   fontSize: 14,
-                  wordWrap: 'on',
+                  wordWrap: 'off',
                   lineNumbers: 'on',
                   scrollBeyondLastLine: false,
                   automaticLayout: true,
@@ -411,7 +411,7 @@ const EditorPanel = () => {
                     options={{
                       minimap: { enabled: false },
                       fontSize: 14,
-                      wordWrap: 'on',
+                      wordWrap: 'off',
                       lineNumbers: 'on',
                       scrollBeyondLastLine: false,
                       automaticLayout: true,

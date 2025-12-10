@@ -58,6 +58,11 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  flex: 1;
+}
+
+.editor-container.split .editor-pane {
+  flex: 0 0 auto;
   min-width: 200px;
 }
 

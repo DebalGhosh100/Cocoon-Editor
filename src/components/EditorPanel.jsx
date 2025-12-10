@@ -11,25 +11,38 @@ const EditorPanel = () => {
   const editorRef2 = useRef(null);
 
   // Parse all YAML files in storage directory to build autocomplete suggestions
+  // This function is called on every keystroke, so it automatically picks up newly created files
   const getStorageYamlStructure = () => {
     const storageFiles = {};
     
-    const traverseFileSystem = (node) => {
-      if (node.type === 'directory' && node.name === 'storage' && node.children) {
-        node.children.forEach(child => {
-          if (child.type === 'file' && child.name.endsWith('.yaml')) {
-            try {
-              const parsed = yaml.load(child.content || '');
-              const filename = child.name.replace('.yaml', '');
-              storageFiles[filename] = parsed || {};
-            } catch (e) {
-              // Invalid YAML, skip
+    const traverseFileSystem = (node, parentPath = '') => {
+      // Check if this is a storage directory
+      if (node.type === 'directory' && node.name === 'storage') {
+        // Process all YAML files in this storage directory
+        if (node.children) {
+          node.children.forEach(child => {
+            if (child.type === 'file' && child.name.endsWith('.yaml')) {
+              try {
+                // Parse the YAML content
+                const parsed = yaml.load(child.content || '');
+                const filename = child.name.replace('.yaml', '');
+                
+                // Only add if parsing was successful and resulted in an object
+                if (parsed && typeof parsed === 'object') {
+                  storageFiles[filename] = parsed;
+                }
+              } catch (e) {
+                // Invalid YAML, skip silently
+                console.debug(`Skipping invalid YAML file: ${child.name}`, e.message);
+              }
             }
-          }
-        });
+          });
+        }
       }
+      
+      // Continue traversing to find storage directories at any level
       if (node.children) {
-        node.children.forEach(traverseFileSystem);
+        node.children.forEach(child => traverseFileSystem(child, `${parentPath}/${node.name}`));
       }
     };
     
@@ -38,36 +51,54 @@ const EditorPanel = () => {
   };
 
   // Generate variable path suggestions from storage YAML structure
-  const generateVariableSuggestions = (storageFiles, currentPath = '') => {
+  const generateVariableSuggestions = (storageFiles) => {
     const suggestions = [];
     
     const traverse = (obj, path, filename) => {
       if (typeof obj === 'object' && obj !== null && !Array.isArray(obj)) {
+        // Handle objects - generate suggestions for each key
         Object.keys(obj).forEach(key => {
           const fullPath = path ? `${path}.${key}` : key;
           const displayPath = `\${${filename}.${fullPath}}`;
+          const value = obj[key];
           
+          // Add suggestion for this path
           suggestions.push({
             path: displayPath,
-            value: obj[key],
-            type: typeof obj[key]
+            value: value,
+            type: Array.isArray(value) ? 'array' : typeof value
           });
           
-          if (typeof obj[key] === 'object' && obj[key] !== null) {
-            traverse(obj[key], fullPath, filename);
+          // Recursively traverse nested objects
+          if (typeof value === 'object' && value !== null) {
+            traverse(value, fullPath, filename);
           }
         });
       } else if (Array.isArray(obj)) {
+        // Handle arrays - add the array itself as a suggestion
+        const displayPath = path ? `\${${filename}.${path}}` : `\${${filename}}`;
         suggestions.push({
-          path: `\${${filename}.${path}}`,
+          path: displayPath,
           value: obj,
           type: 'array'
+        });
+        
+        // Also traverse array elements if they are objects
+        obj.forEach((item, index) => {
+          if (typeof item === 'object' && item !== null) {
+            const arrayPath = path ? `${path}[${index}]` : `[${index}]`;
+            traverse(item, arrayPath, filename);
+          }
         });
       }
     };
     
+    // Process each storage file
     Object.keys(storageFiles).forEach(filename => {
-      traverse(storageFiles[filename], '', filename);
+      const content = storageFiles[filename];
+      if (content && typeof content === 'object') {
+        traverse(content, '', filename);
+      }
     });
     
     return suggestions;
@@ -206,6 +237,8 @@ const EditorPanel = () => {
         // Check for ${} variable syntax
         const variableMatch = textUntilPosition.match(/\$\{([^}]*$)/);
         if (variableMatch) {
+          // Parse storage files dynamically - this runs on every keystroke
+          // so newly created YAML files in the storage directory are automatically detected
           const storageFiles = getStorageYamlStructure();
           const variableSuggestions = generateVariableSuggestions(storageFiles);
           
@@ -215,7 +248,8 @@ const EditorPanel = () => {
             documentation: `Type: ${varSug.type}\nValue: ${JSON.stringify(varSug.value, null, 2)}`,
             insertText: varSug.path.replace('${', '').replace('}', ''),
             detail: `${varSug.type}`,
-            range: range
+            range: range,
+            sortText: `0_${varSug.path}` // Prioritize storage variables
           }));
 
           return { suggestions };

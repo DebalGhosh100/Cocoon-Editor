@@ -1,11 +1,10 @@
 import React, { useRef, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import { useFileSystem } from '../context/FileSystemContext';
-import { Download } from 'lucide-react';
 import './CodeEditor.css';
 
 const CodeEditor = () => {
-  const { selectedFile, updateNodeContent, fileSystem } = useFileSystem();
+  const { selectedFile, updateNodeContent } = useFileSystem();
   const editorRef = useRef(null);
 
   const handleEditorDidMount = (editor, monaco) => {
@@ -72,19 +71,6 @@ const CodeEditor = () => {
     }
   };
 
-  const downloadFileStructure = () => {
-    const dataStr = JSON.stringify(fileSystem, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'file-structure.json';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <div className="code-editor">
       <div className="editor-header">
@@ -95,14 +81,6 @@ const CodeEditor = () => {
             <span className="editor-placeholder">No file selected</span>
           )}
         </div>
-        <button
-          className="download-btn"
-          onClick={downloadFileStructure}
-          title="Download File Structure"
-        >
-          <Download size={16} />
-          <span>Download Structure</span>
-        </button>
       </div>
       <div className="editor-content">
         {selectedFile ? (

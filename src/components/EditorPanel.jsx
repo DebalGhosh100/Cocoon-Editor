@@ -1,0 +1,417 @@
+import React, { useRef, useEffect } from 'react';
+import Editor from '@monaco-editor/react';
+import { useFileSystem } from '../context/FileSystemContext';
+import { Columns } from 'lucide-react';
+import './EditorPanel.css';
+import yaml from 'js-yaml';
+
+const EditorPanel = () => {
+  const { selectedFile, selectedFile2, splitView, updateNodeContent, toggleSplitView, fileSystem } = useFileSystem();
+  const editorRef1 = useRef(null);
+  const editorRef2 = useRef(null);
+
+  // Parse all YAML files in storage directory to build autocomplete suggestions
+  const getStorageYamlStructure = () => {
+    const storageFiles = {};
+    
+    const traverseFileSystem = (node) => {
+      if (node.type === 'directory' && node.name === 'storage' && node.children) {
+        node.children.forEach(child => {
+          if (child.type === 'file' && child.name.endsWith('.yaml')) {
+            try {
+              const parsed = yaml.load(child.content || '');
+              const filename = child.name.replace('.yaml', '');
+              storageFiles[filename] = parsed || {};
+            } catch (e) {
+              // Invalid YAML, skip
+            }
+          }
+        });
+      }
+      if (node.children) {
+        node.children.forEach(traverseFileSystem);
+      }
+    };
+    
+    traverseFileSystem(fileSystem);
+    return storageFiles;
+  };
+
+  // Generate variable path suggestions from storage YAML structure
+  const generateVariableSuggestions = (storageFiles, currentPath = '') => {
+    const suggestions = [];
+    
+    const traverse = (obj, path, filename) => {
+      if (typeof obj === 'object' && obj !== null && !Array.isArray(obj)) {
+        Object.keys(obj).forEach(key => {
+          const fullPath = path ? `${path}.${key}` : key;
+          const displayPath = `\${${filename}.${fullPath}}`;
+          
+          suggestions.push({
+            path: displayPath,
+            value: obj[key],
+            type: typeof obj[key]
+          });
+          
+          if (typeof obj[key] === 'object' && obj[key] !== null) {
+            traverse(obj[key], fullPath, filename);
+          }
+        });
+      } else if (Array.isArray(obj)) {
+        suggestions.push({
+          path: `\${${filename}.${path}}`,
+          value: obj,
+          type: 'array'
+        });
+      }
+    };
+    
+    Object.keys(storageFiles).forEach(filename => {
+      traverse(storageFiles[filename], '', filename);
+    });
+    
+    return suggestions;
+  };
+
+  const handleEditorDidMount = (editor, monaco) => {
+    // Configure YAML language support
+    monaco.languages.yaml?.yamlDefaults?.setDiagnosticsOptions({
+      validate: true,
+      schemas: [],
+    });
+
+    // Common Linux commands for autocomplete
+    const linuxCommands = [
+      'ls', 'ls -al', 'ls -la', 'ls -l', 'cd', 'pwd', 'mkdir', 'rmdir', 'rm', 'cp', 'mv', 
+      'cat ', 'cat', 'echo',
+      'grep', 'find', 'sed', 'awk', 'sort', 'uniq', 'wc', 'head', 'tail ', 'tail',
+      'chmod', 'chown', 'chgrp', 'touch', 'tar', 'zip', 'unzip', 'gzip', 'gunzip',
+      'ps', 'top', 'kill', 'killall', 'bg', 'fg', 'jobs', 'df', 'du', 'free',
+      'which', 'whereis', 'wget', 'curl', 'ssh', 'scp', 'rsync', 'ping', 'netstat',
+      'ifconfig', 'ip', 'hostname', 'uptime', 'whoami', 'sudo', 'sudo apt-get ', 'su', 
+      'apt', 'apt-get ', 'yum ', 'dnf', 'pacman', 'systemctl', 'service', 'journalctl', 'dmesg',
+      'export', 'env', 'printenv', 'source', 'alias', 'history', 'man', 'help',
+      'git', 'docker', 'npm', 'node', 'python', 'pip', 'java', 'javac', 'gcc',
+      'make', 'cmake', 'vim', 'nano', 'emacs', 'code', 'less', 'more'
+    ];
+
+    // Cocoon framework keywords and snippets
+    const cocoonKeywords = [
+      {
+        label: 'blocks',
+        kind: monaco.languages.CompletionItemKind.Keyword,
+        documentation: 'Root element for Cocoon workflow',
+        insertText: 'blocks:\n  - ',
+        detail: 'Workflow container'
+      },
+      {
+        label: 'name',
+        kind: monaco.languages.CompletionItemKind.Property,
+        documentation: 'Block name (optional)',
+        insertText: 'name: ""',
+        detail: 'Block identifier'
+      },
+      {
+        label: 'description',
+        kind: monaco.languages.CompletionItemKind.Property,
+        documentation: 'Block description (optional)',
+        insertText: 'description: ""',
+        detail: 'Block documentation'
+      },
+      {
+        label: 'run',
+        kind: monaco.languages.CompletionItemKind.Property,
+        documentation: 'Shell command(s) to execute',
+        insertText: 'run: ',
+        detail: 'Execute command'
+      },
+      {
+        label: 'parallel',
+        kind: monaco.languages.CompletionItemKind.Keyword,
+        documentation: 'Execute blocks in parallel',
+        insertText: 'parallel:\n  - name: ""\n    run: ',
+        detail: 'Parallel execution'
+      },
+      {
+        label: 'for',
+        kind: monaco.languages.CompletionItemKind.Keyword,
+        documentation: 'Loop iteration over list',
+        insertText: 'for:\n  individual: item\n  in: ${}\n  run: ',
+        detail: 'Loop comprehension'
+      },
+      {
+        label: 'run-remotely',
+        kind: monaco.languages.CompletionItemKind.Keyword,
+        documentation: 'Execute command on remote server via SSH',
+        insertText: 'run-remotely:\n  ip: \n  user: \n  pass: \n  run: \n  log-into: ',
+        detail: 'SSH remote execution'
+      },
+      {
+        label: 'individual',
+        kind: monaco.languages.CompletionItemKind.Property,
+        documentation: 'Loop variable name',
+        insertText: 'individual: ',
+        detail: 'For loop variable'
+      },
+      {
+        label: 'in',
+        kind: monaco.languages.CompletionItemKind.Property,
+        documentation: 'List to iterate over',
+        insertText: 'in: ${}',
+        detail: 'Loop source'
+      },
+      {
+        label: 'ip',
+        kind: monaco.languages.CompletionItemKind.Property,
+        documentation: 'Remote server IP address',
+        insertText: 'ip: ',
+        detail: 'SSH host'
+      },
+      {
+        label: 'user',
+        kind: monaco.languages.CompletionItemKind.Property,
+        documentation: 'SSH username',
+        insertText: 'user: ',
+        detail: 'SSH authentication'
+      },
+      {
+        label: 'pass',
+        kind: monaco.languages.CompletionItemKind.Property,
+        documentation: 'SSH password',
+        insertText: 'pass: ',
+        detail: 'SSH authentication'
+      },
+      {
+        label: 'log-into',
+        kind: monaco.languages.CompletionItemKind.Property,
+        documentation: 'Log file path for remote execution output',
+        insertText: 'log-into: ',
+        detail: 'Remote execution logging'
+      }
+    ];
+
+    // Register autocomplete provider for YAML
+    monaco.languages.registerCompletionItemProvider('yaml', {
+      provideCompletionItems: (model, position) => {
+        const lineContent = model.getLineContent(position.lineNumber);
+        const textUntilPosition = lineContent.substring(0, position.column - 1);
+        const word = model.getWordUntilPosition(position);
+        const range = {
+          startLineNumber: position.lineNumber,
+          endLineNumber: position.lineNumber,
+          startColumn: word.startColumn,
+          endColumn: word.endColumn
+        };
+
+        // Check for ${} variable syntax
+        const variableMatch = textUntilPosition.match(/\$\{([^}]*$)/);
+        if (variableMatch) {
+          const storageFiles = getStorageYamlStructure();
+          const variableSuggestions = generateVariableSuggestions(storageFiles);
+          
+          const suggestions = variableSuggestions.map(varSug => ({
+            label: varSug.path,
+            kind: monaco.languages.CompletionItemKind.Variable,
+            documentation: `Type: ${varSug.type}\nValue: ${JSON.stringify(varSug.value, null, 2)}`,
+            insertText: varSug.path.replace('${', '').replace('}', ''),
+            detail: `${varSug.type}`,
+            range: range
+          }));
+
+          return { suggestions };
+        }
+        
+        // Check if we're inside a 'run:' block for Linux commands
+        const runMatch = textUntilPosition.match(/run:\s*['"]?([^'"]*$)/);
+        if (runMatch) {
+          const suggestions = linuxCommands.map(cmd => ({
+            label: cmd,
+            kind: monaco.languages.CompletionItemKind.Function,
+            documentation: `Linux command: ${cmd}`,
+            insertText: cmd,
+            range: range
+          }));
+
+          return { suggestions };
+        }
+
+        // Default: provide Cocoon framework keywords
+        const suggestions = cocoonKeywords.map(keyword => ({
+          ...keyword,
+          range: range
+        }));
+
+        return { suggestions };
+      }
+    });
+  };
+
+  const handleEditorChange1 = (value) => {
+    if (selectedFile) {
+      updateNodeContent(selectedFile.id, value);
+    }
+  };
+
+  const handleEditorChange2 = (value) => {
+    if (selectedFile2) {
+      updateNodeContent(selectedFile2.id, value);
+    }
+  };
+
+  const EmptyState = () => (
+    <div className="editor-empty-state">
+      <div className="empty-state-content">
+        <svg
+          width="64"
+          height="64"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+          <polyline points="13 2 13 9 20 9" />
+        </svg>
+        <p>Select a file to start editing</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="editor-panel">
+      <div className="editor-toolbar">
+        <button
+          className={`split-view-btn ${splitView ? 'active' : ''}`}
+          onClick={toggleSplitView}
+          title={splitView ? 'Close split view' : 'Open split view'}
+        >
+          <Columns size={16} />
+          <span>{splitView ? 'Single View' : 'Split View'}</span>
+        </button>
+      </div>
+
+      <div className={`editor-container ${splitView ? 'split' : ''}`}>
+        <div className="editor-pane">
+          <div className="editor-header">
+            <div className="editor-title">
+              {selectedFile ? (
+                <span className="editor-filename">{selectedFile.name}</span>
+              ) : (
+                <span className="editor-placeholder">No file selected</span>
+              )}
+            </div>
+          </div>
+          <div className="editor-content">
+            {selectedFile ? (
+              <Editor
+                height="100%"
+                language="yaml"
+                theme="vs-dark"
+                value={selectedFile.content}
+                onChange={handleEditorChange1}
+                onMount={(editor, monaco) => {
+                  editorRef1.current = editor;
+                  handleEditorDidMount(editor, monaco);
+                }}
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: 14,
+                  wordWrap: 'on',
+                  lineNumbers: 'on',
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                  tabSize: 2,
+                  insertSpaces: true,
+                  folding: true,
+                  renderWhitespace: 'selection',
+                  bracketPairColorization: {
+                    enabled: true
+                  },
+                  suggest: {
+                    showKeywords: true,
+                    showSnippets: true,
+                  },
+                  quickSuggestions: {
+                    other: true,
+                    comments: false,
+                    strings: true
+                  },
+                  parameterHints: {
+                    enabled: true
+                  },
+                }}
+              />
+            ) : (
+              <EmptyState />
+            )}
+          </div>
+        </div>
+
+        {splitView && (
+          <>
+            <div className="editor-divider" />
+            <div className="editor-pane">
+              <div className="editor-header">
+                <div className="editor-title">
+                  {selectedFile2 ? (
+                    <span className="editor-filename">{selectedFile2.name}</span>
+                  ) : (
+                    <span className="editor-placeholder">Select another file</span>
+                  )}
+                </div>
+              </div>
+              <div className="editor-content">
+                {selectedFile2 ? (
+                  <Editor
+                    height="100%"
+                    language="yaml"
+                    theme="vs-dark"
+                    value={selectedFile2.content}
+                    onChange={handleEditorChange2}
+                    onMount={(editor, monaco) => {
+                      editorRef2.current = editor;
+                      handleEditorDidMount(editor, monaco);
+                    }}
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 14,
+                      wordWrap: 'on',
+                      lineNumbers: 'on',
+                      scrollBeyondLastLine: false,
+                      automaticLayout: true,
+                      tabSize: 2,
+                      insertSpaces: true,
+                      folding: true,
+                      renderWhitespace: 'selection',
+                      bracketPairColorization: {
+                        enabled: true
+                      },
+                      suggest: {
+                        showKeywords: true,
+                        showSnippets: true,
+                      },
+                      quickSuggestions: {
+                        other: true,
+                        comments: false,
+                        strings: true
+                      },
+                      parameterHints: {
+                        enabled: true
+                      },
+                    }}
+                  />
+                ) : (
+                  <EmptyState />
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default EditorPanel;

@@ -54,6 +54,185 @@ code {
   min-height: 0;
 }
 
+.app-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  background: #252526;
+  border-top: 1px solid #2d2d30;
+  flex-shrink: 0;
+}
+
+.app-footer .download-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #0e639c;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.app-footer .download-btn:hover {
+  background: #1177bb;
+}
+
+.app-footer .download-btn:active {
+  background: #0d5a8f;
+}
+
+/* Popup Styles */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.popup-content {
+  background: #252526;
+  border: 1px solid #3e3e42;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #3e3e42;
+}
+
+.popup-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  color: #cccccc;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.15s;
+}
+
+.close-btn:hover {
+  background: #3e3e42;
+  color: #ffffff;
+}
+
+.popup-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.popup-description {
+  margin: 0 0 16px 0;
+  color: #cccccc;
+  font-size: 14px;
+}
+
+.command-box {
+  background: #1e1e1e;
+  border: 1px solid #3e3e42;
+  border-radius: 4px;
+  padding: 16px;
+  overflow-x: auto;
+  margin-bottom: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.command-box code {
+  color: #d4d4d4;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre;
+}
+
+.command-box::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.command-box::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.command-box::-webkit-scrollbar-thumb {
+  background: #424242;
+  border-radius: 5px;
+}
+
+.command-box::-webkit-scrollbar-thumb:hover {
+  background: #4e4e4e;
+}
+
+.copy-command-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #0e639c;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.copy-command-btn:hover {
+  background: #1177bb;
+}
+
+.copy-command-btn:active {
+  background: #0d5a8f;
+}
+
+.copy-command-btn.copied {
+  background: #2ea043 !important;
+}
+
+.copy-command-btn.copied:hover {
+  background: #2ea043 !important;
+}
+
+.popup-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
 /* Scrollbar styling for dark mode */
 ::-webkit-scrollbar {
   width: 10px;

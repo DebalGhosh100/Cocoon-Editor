@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ChevronRight, ChevronDown, File, Folder, FolderOpen, Plus, Trash2 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ChevronRight, ChevronDown, File, Folder, FolderOpen, Plus, Trash2, Edit2, Check, X } from 'lucide-react';
 import { useFileSystem } from '../context/FileSystemContext';
 import './FileTree.css';
 
@@ -7,10 +7,20 @@ const TreeNode = ({ node, level = 0 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
   const [showActions, setShowActions] = useState(false);
-  const { selectedFile, selectFile, addNode, deleteNode } = useFileSystem();
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [newName, setNewName] = useState(node.name);
+  const inputRef = useRef(null);
+  const { selectedFile, selectFile, addNode, deleteNode, renameNode } = useFileSystem();
 
   const isSelected = selectedFile?.id === node.id;
   const isDirectory = node.type === 'directory';
+
+  useEffect(() => {
+    if (isRenaming && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isRenaming]);
 
   const handleClick = () => {
     if (isDirectory) {
@@ -43,6 +53,34 @@ const TreeNode = ({ node, level = 0 }) => {
     }
   };
 
+  const handleRename = (e) => {
+    e.stopPropagation();
+    setIsRenaming(true);
+    setNewName(node.name);
+  };
+
+  const handleRenameSubmit = (e) => {
+    e.stopPropagation();
+    if (newName.trim() && newName !== node.name) {
+      renameNode(node.id, newName.trim());
+    }
+    setIsRenaming(false);
+  };
+
+  const handleRenameCancel = (e) => {
+    e.stopPropagation();
+    setNewName(node.name);
+    setIsRenaming(false);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleRenameSubmit(e);
+    } else if (e.key === 'Escape') {
+      handleRenameCancel(e);
+    }
+  };
+
   return (
     <div className="tree-node">
       <div
@@ -71,10 +109,38 @@ const TreeNode = ({ node, level = 0 }) => {
               <File size={16} />
             )}
           </span>
-          <span className="tree-node-name">{node.name}</span>
+          {isRenaming ? (
+            <div className="tree-node-rename" onClick={(e) => e.stopPropagation()}>
+              <input
+                ref={inputRef}
+                type="text"
+                className="rename-input"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onBlur={handleRenameSubmit}
+              />
+              <button
+                className="rename-confirm-btn"
+                onClick={handleRenameSubmit}
+                title="Confirm"
+              >
+                <Check size={12} />
+              </button>
+              <button
+                className="rename-cancel-btn"
+                onClick={handleRenameCancel}
+                title="Cancel"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ) : (
+            <span className="tree-node-name">{node.name}</span>
+          )}
         </div>
         
-        {showActions && (
+        {showActions && !isRenaming && (
           <div className="tree-node-actions">
             {isDirectory && (
               <>
@@ -97,13 +163,22 @@ const TreeNode = ({ node, level = 0 }) => {
               </>
             )}
             {node.id !== 'root' && (
-              <button
-                className="tree-action-btn delete"
-                onClick={handleDelete}
-                title="Delete"
-              >
-                <Trash2 size={14} />
-              </button>
+              <>
+                <button
+                  className="tree-action-btn"
+                  onClick={handleRename}
+                  title="Rename"
+                >
+                  <Edit2 size={14} />
+                </button>
+                <button
+                  className="tree-action-btn delete"
+                  onClick={handleDelete}
+                  title="Delete"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </>
             )}
           </div>
         )}

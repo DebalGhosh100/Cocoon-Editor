@@ -20,7 +20,20 @@ const initialFileSystem = {
       name: 'main.yaml',
       type: 'file',
       content: `blocks:
-  - run: 'echo "current-directory: $(pwd)" >> storage/paths.yaml'
+  - name: "Example Sequential Block"
+    description: "This demonstrates basic sequential execution"
+    run: echo "Hello from Cocoon!"
+  
+  - name: "Use Variables from Storage"
+    description: "Access configuration from storage/config.yaml"
+    run: echo "App Name: \${config.app.name}"
+  
+  - name: "Parallel Example"
+    parallel:
+      - name: "Task 1"
+        run: echo "Running task 1"
+      - name: "Task 2"
+        run: echo "Running task 2"
 `
     },
     {
@@ -30,9 +43,58 @@ const initialFileSystem = {
       children: [
         {
           id: '3',
-          name: 'paths.yaml',
+          name: 'config.yaml',
           type: 'file',
-          content: ``
+          content: `app:
+  name: "MyWorkflow"
+  version: "1.0.0"
+  environment: "production"
+
+database:
+  host: "localhost"
+  port: 5432
+  name: "mydb"
+  credentials:
+    username: "admin"
+    password: "secret"
+
+paths:
+  logs: "./logs"
+  data: "./data"
+  backups: "./backups"
+  temp: "./temp"
+
+servers:
+  web:
+    ip: "192.168.1.10"
+    user: "deploy"
+    pass: "deploy123"
+  api:
+    ip: "192.168.1.11"
+    user: "deploy"
+    pass: "deploy123"
+`
+        },
+        {
+          id: '4',
+          name: 'servers.yaml',
+          type: 'file',
+          content: `production:
+  server1:
+    ip: "10.0.1.10"
+    user: "admin"
+    pass: "password123"
+  server2:
+    ip: "10.0.1.11"
+    user: "admin"
+    pass: "password123"
+
+staging:
+  server1:
+    ip: "10.0.2.10"
+    user: "admin"
+    pass: "password123"
+`
         }
       ]
     }
@@ -48,6 +110,8 @@ export const FileSystemProvider = ({ children }) => {
     const mainYaml = initialFileSystem.children.find(child => child.name === 'main.yaml');
     return mainYaml || null;
   });
+  const [selectedFile2, setSelectedFile2] = useState(null);
+  const [splitView, setSplitView] = useState(false);
 
   const findNodeById = (tree, id) => {
     if (tree.id === id) return tree;
@@ -134,8 +198,39 @@ export const FileSystemProvider = ({ children }) => {
   const selectFile = (id) => {
     const node = findNodeById(fileSystem, id);
     if (node && node.type === 'file') {
-      setSelectedFile(node);
+      if (!splitView) {
+        setSelectedFile(node);
+      } else {
+        // In split view, alternate between left and right panels
+        if (!selectedFile2) {
+          setSelectedFile2(node);
+        } else {
+          setSelectedFile(node);
+        }
+      }
     }
+  };
+
+  const toggleSplitView = () => {
+    if (splitView) {
+      // Closing split view, keep only the left file
+      setSelectedFile2(null);
+    }
+    setSplitView(!splitView);
+  };
+
+  const getAllFiles = () => {
+    const files = [];
+    const traverse = (node) => {
+      if (node.type === 'file') {
+        files.push(node);
+      }
+      if (node.children) {
+        node.children.forEach(traverse);
+      }
+    };
+    traverse(fileSystem);
+    return files;
   };
 
   return (
@@ -143,12 +238,17 @@ export const FileSystemProvider = ({ children }) => {
       value={{
         fileSystem,
         selectedFile,
+        selectedFile2,
+        splitView,
         addNode,
         deleteNode,
         updateNodeContent,
         renameNode,
         selectFile,
-        setSelectedFile
+        setSelectedFile,
+        setSelectedFile2,
+        toggleSplitView,
+        getAllFiles
       }}
     >
       {children}

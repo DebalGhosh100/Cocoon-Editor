@@ -129,6 +129,52 @@
   border-radius: 50%;
 }
 
-.tree-node-children {
-  /* Children are rendered with increased padding via level prop */
+.tree-node-rename {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.rename-input {
+  flex: 1;
+  min-width: 60px;
+  padding: 2px 6px;
+  background: #3c3c3c;
+  border: 1px solid #007acc;
+  border-radius: 2px;
+  color: #cccccc;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+
+.rename-input:focus {
+  border-color: #007acc;
+  background: #3c3c3c;
+}
+
+.rename-confirm-btn,
+.rename-cancel-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  background: transparent;
+  border: none;
+  color: #cccccc;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background-color 0.15s;
+}
+
+.rename-confirm-btn:hover {
+  background-color: #2ea043;
+  color: #ffffff;
+}
+
+.rename-cancel-btn:hover {
+  background-color: #f85149;
+  color: #ffffff;
 }

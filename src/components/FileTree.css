@@ -1,0 +1,134 @@
+.file-tree {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #1e1e1e;
+  color: #cccccc;
+  overflow: hidden;
+}
+
+.file-tree-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #2d2d30;
+  background: #252526;
+}
+
+.file-tree-header h3 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #cccccc;
+}
+
+.file-tree-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 0;
+}
+
+.file-tree-content::-webkit-scrollbar {
+  width: 10px;
+}
+
+.file-tree-content::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.file-tree-content::-webkit-scrollbar-thumb {
+  background: #424242;
+  border-radius: 5px;
+}
+
+.file-tree-content::-webkit-scrollbar-thumb:hover {
+  background: #4e4e4e;
+}
+
+.tree-node {
+  user-select: none;
+}
+
+.tree-node-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  min-height: 22px;
+}
+
+.tree-node-content:hover {
+  background-color: #2a2d2e;
+}
+
+.tree-node-content.selected {
+  background-color: #37373d;
+}
+
+.tree-node-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.tree-node-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: #c5c5c5;
+}
+
+.tree-node-name {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #cccccc;
+}
+
+.tree-node-actions {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.tree-action-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  background: transparent;
+  border: none;
+  color: #cccccc;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background-color 0.15s;
+}
+
+.tree-action-btn:hover {
+  background-color: #3e3e42;
+}
+
+.tree-action-btn.delete:hover {
+  background-color: #5a1d1d;
+  color: #f48771;
+}
+
+.tree-action-btn .plus-icon {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: #1e1e1e;
+  border-radius: 50%;
+}
+
+.tree-node-children {
+  /* Children are rendered with increased padding via level prop */
+}

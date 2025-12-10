@@ -55,16 +55,27 @@
 }
 
 .editor-pane {
-  flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-width: 200px;
 }
 
 .editor-divider {
-  width: 2px;
+  width: 6px;
   background: #2d2d30;
+  cursor: col-resize;
   flex-shrink: 0;
+  position: relative;
+  transition: background-color 0.15s;
+}
+
+.editor-divider:hover {
+  background: #3e3e42;
+}
+
+.editor-divider:active {
+  background: #007acc;
 }
 
 .editor-header {

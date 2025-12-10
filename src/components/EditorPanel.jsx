@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import Editor from '@monaco-editor/react';
 import { useFileSystem } from '../context/FileSystemContext';
 import { Columns } from 'lucide-react';
@@ -9,6 +9,9 @@ const EditorPanel = () => {
   const { selectedFile, selectedFile2, splitView, updateNodeContent, toggleSplitView, fileSystem } = useFileSystem();
   const editorRef1 = useRef(null);
   const editorRef2 = useRef(null);
+  const [leftPaneWidth, setLeftPaneWidth] = useState(50); // percentage
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef(null);
 
   // Parse all YAML files in storage directory to build autocomplete suggestions
   // This function is called on every keystroke, so it automatically picks up newly created files
@@ -292,6 +295,41 @@ const EditorPanel = () => {
     }
   };
 
+  // Handle split pane resize
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isDragging || !containerRef.current) return;
+
+      const container = containerRef.current;
+      const rect = container.getBoundingClientRect();
+      const newLeftWidth = ((e.clientX - rect.left) / rect.width) * 100;
+
+      // Constrain between 20% and 80%
+      if (newLeftWidth >= 20 && newLeftWidth <= 80) {
+        setLeftPaneWidth(newLeftWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
+
   const EmptyState = () => (
     <div className="editor-empty-state">
       <div className="empty-state-content">
@@ -326,8 +364,8 @@ const EditorPanel = () => {
         </button>
       </div>
 
-      <div className={`editor-container ${splitView ? 'split' : ''}`}>
-        <div className="editor-pane">
+      <div className={`editor-container ${splitView ? 'split' : ''}`} ref={containerRef}>
+        <div className="editor-pane" style={splitView ? { width: `${leftPaneWidth}%` } : {}}>
           <div className="editor-header">
             <div className="editor-title">
               {selectedFile ? (
@@ -385,8 +423,8 @@ const EditorPanel = () => {
 
         {splitView && (
           <>
-            <div className="editor-divider" />
-            <div className="editor-pane">
+            <div className="editor-divider" onMouseDown={handleMouseDown} />
+            <div className="editor-pane" style={{ width: `${100 - leftPaneWidth}%` }}>
               <div className="editor-header">
                 <div className="editor-title">
                   {selectedFile2 ? (

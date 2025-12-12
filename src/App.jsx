@@ -49,9 +49,9 @@ function AppContent() {
     // Generate bash script content
     const scriptContent = `#!/bin/bash\n\n# Cocoon Workflow Structure Setup Script\n# Generated from Cocoon Kickstart IDE\n\nset -e  # Exit on any error\n\necho "Creating workflow structure..."\n\n${getFullCommand()}\n\necho ""\necho "✓ Workflow structure created successfully!"\necho "Run 'cocoon main.yaml' to execute your workflow."\n`;
     
-    // Create data URL
-    const blob = new Blob([scriptContent], { type: 'text/x-shellscript' });
-    return URL.createObjectURL(blob);
+    // Create base64 data URL (can be used with curl/wget)
+    const base64Content = btoa(unescape(encodeURIComponent(scriptContent)));
+    return `data:text/x-shellscript;base64,${base64Content}`;
   };
 
   return (

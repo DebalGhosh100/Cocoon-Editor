@@ -45,20 +45,13 @@ function AppContent() {
     return generateLinuxCommand(fileSystem).join('\n');
   };
 
-  const cloneStructure = () => {
+  const getScriptDataUrl = () => {
     // Generate bash script content
     const scriptContent = `#!/bin/bash\n\n# Cocoon Workflow Structure Setup Script\n# Generated from Cocoon Kickstart IDE\n\nset -e  # Exit on any error\n\necho "Creating workflow structure..."\n\n${getFullCommand()}\n\necho ""\necho "✓ Workflow structure created successfully!"\necho "Run 'cocoon main.yaml' to execute your workflow."\n`;
     
-    // Create blob and download
+    // Create data URL
     const blob = new Blob([scriptContent], { type: 'text/x-shellscript' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'setup-workflow.sh';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    return URL.createObjectURL(blob);
   };
 
   return (
@@ -76,14 +69,15 @@ function AppContent() {
         />
       </div>
       <div className="app-footer">
-        <button
+        <a
+          href={getScriptDataUrl()}
+          download="setup-workflow.sh"
           className="download-btn"
-          onClick={cloneStructure}
           title="Download setup script"
         >
           <Download size={16} />
           <span>Download Setup Script</span>
-        </button>
+        </a>
       </div>
 
 

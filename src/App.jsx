@@ -37,7 +37,7 @@ function AppContent() {
       }
     } else if (node.type === 'file') {
       const filePath = basePath ? `${basePath}/${node.name}` : node.name;
-      const content = (node.content || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/`/g, '\\`');
+      const content = node.content || '';
       commands.push(`cat > "${filePath}" << 'EOF'\n${content}\nEOF`);
     }
     

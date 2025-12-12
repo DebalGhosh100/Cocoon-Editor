@@ -61,11 +61,6 @@ function AppContent() {
     URL.revokeObjectURL(url);
   };
 
-  const closePopup = () => {
-    setShowPopup(false);
-    setCopied(false);
-  };
-
   return (
     <div className="app">
       <div className="app-header">

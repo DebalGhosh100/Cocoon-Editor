@@ -45,7 +45,7 @@ function AppContent() {
   };
   
   const getFullCommand = () => {
-    return generateLinuxCommand(fileSystem).join(' && ');
+    return generateLinuxCommand(fileSystem).join('\n');
   };
 
   const cloneStructure = () => {

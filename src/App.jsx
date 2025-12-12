@@ -5,11 +5,14 @@ import EditorPanel from './components/EditorPanel';
 import ResizablePanel from './components/ResizablePanel';
 import './App.css';
 
-import { Download } from 'lucide-react';
+import { Terminal, Copy, X } from 'lucide-react';
 import { useFileSystem } from './context/FileSystemContext';
+import { useState } from 'react';
 
 function AppContent() {
   const { fileSystem } = useFileSystem();
+  const [showCurlPopup, setShowCurlPopup] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const generateLinuxCommand = (node, basePath = '') => {
     let commands = [];
@@ -45,13 +48,31 @@ function AppContent() {
     return generateLinuxCommand(fileSystem).join('\n');
   };
 
-  const getScriptDataUrl = () => {
-    // Generate bash script content
+  const getCurlCommand = () => {
     const scriptContent = `#!/bin/bash\n\n# Cocoon Workflow Structure Setup Script\n# Generated from Cocoon Kickstart IDE\n\nset -e  # Exit on any error\n\necho "Creating workflow structure..."\n\n${getFullCommand()}\n\necho ""\necho "✓ Workflow structure created successfully!"\necho "Run 'cocoon main.yaml' to execute your workflow."\n`;
     
-    // Create base64 data URL (can be used with curl/wget)
     const base64Content = btoa(unescape(encodeURIComponent(scriptContent)));
-    return `data:text/x-shellscript;base64,${base64Content}`;
+    return `echo "${base64Content}" | base64 -d | bash`;
+  };
+
+  const showCurlPopupHandler = () => {
+    setShowCurlPopup(true);
+    setCopied(false);
+  };
+
+  const closeCurlPopup = () => {
+    setShowCurlPopup(false);
+    setCopied(false);
+  };
+
+  const copyCurlCommand = async () => {
+    try {
+      await navigator.clipboard.writeText(getCurlCommand());
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
   };
 
   return (
@@ -69,18 +90,46 @@ function AppContent() {
         />
       </div>
       <div className="app-footer">
-        <a
-          href={getScriptDataUrl()}
-          download="setup-workflow.sh"
+        <button
+          onClick={showCurlPopupHandler}
           className="download-btn"
-          title="Download setup script"
+          title="Get curl command"
         >
-          <Download size={16} />
-          <span>Download Setup Script</span>
-        </a>
+          <Terminal size={16} />
+          <span>Curl Setup Script</span>
+        </button>
       </div>
 
-
+      {showCurlPopup && (
+        <div className="popup-overlay" onClick={closeCurlPopup}>
+          <div className="popup-content" onClick={(e) => e.stopPropagation()}>
+            <div className="popup-header">
+              <h3>Curl Setup Command</h3>
+              <button className="close-btn" onClick={closeCurlPopup} title="Close">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="popup-body">
+              <p className="popup-description">
+                Run this command in your terminal to create the entire workflow structure:
+              </p>
+              <pre className="command-box">
+                <code>{getCurlCommand()}</code>
+              </pre>
+              <div className="popup-actions">
+                <button 
+                  className={`copy-command-btn ${copied ? 'copied' : ''}`}
+                  onClick={copyCurlCommand}
+                  title="Copy to clipboard"
+                >
+                  <Copy size={16} />
+                  <span>{copied ? 'Copied!' : 'Copy Command'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

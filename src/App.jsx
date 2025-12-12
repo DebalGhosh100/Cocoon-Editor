@@ -5,14 +5,11 @@ import EditorPanel from './components/EditorPanel';
 import ResizablePanel from './components/ResizablePanel';
 import './App.css';
 
-import { Copy, X } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { useFileSystem } from './context/FileSystemContext';
-import { useState } from 'react';
 
 function AppContent() {
   const { fileSystem } = useFileSystem();
-  const [showPopup, setShowPopup] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   const generateLinuxCommand = (node, basePath = '') => {
     let commands = [];
@@ -49,21 +46,19 @@ function AppContent() {
   };
 
   const cloneStructure = () => {
-    setShowPopup(true);
-    setCopied(false);
-  };
-
-  const copyToClipboard = async () => {
-    const command = getFullCommand();
-    try {
-      await navigator.clipboard.writeText(command);
-      setCopied(true);
-      setTimeout(() => {
-        setCopied(false);
-      }, 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
+    // Generate bash script content
+    const scriptContent = `#!/bin/bash\n\n# Cocoon Workflow Structure Setup Script\n# Generated from Cocoon Kickstart IDE\n\nset -e  # Exit on any error\n\necho "Creating workflow structure..."\n\n${getFullCommand()}\n\necho ""\necho "✓ Workflow structure created successfully!"\necho "Run 'cocoon main.yaml' to execute your workflow."\n`;
+    
+    // Create blob and download
+    const blob = new Blob([scriptContent], { type: 'text/x-shellscript' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'setup-workflow.sh';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const closePopup = () => {
@@ -89,43 +84,14 @@ function AppContent() {
         <button
           className="download-btn"
           onClick={cloneStructure}
-          title="Clone File Structure"
+          title="Download setup script"
         >
-          <Copy size={16} />
-          <span>Clone Structure</span>
+          <Download size={16} />
+          <span>Download Setup Script</span>
         </button>
       </div>
 
-      {showPopup && (
-        <div className="popup-overlay" onClick={closePopup}>
-          <div className="popup-content" onClick={(e) => e.stopPropagation()}>
-            <div className="popup-header">
-              <h3>Clone Structure Command</h3>
-              <button className="close-btn" onClick={closePopup} title="Close">
-                <X size={20} />
-              </button>
-            </div>
-            <div className="popup-body">
-              <p className="popup-description">
-                Run this command in your terminal to create the directory structure and files:
-              </p>
-              <pre className="command-box">
-                <code>{getFullCommand()}</code>
-              </pre>
-              <div className="popup-actions">
-                <button 
-                  className={`copy-command-btn ${copied ? 'copied' : ''}`}
-                  onClick={copyToClipboard}
-                  title="Copy to clipboard"
-                >
-                  <Copy size={16} />
-                  <span>{copied ? 'Copied!' : 'Copy Command'}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

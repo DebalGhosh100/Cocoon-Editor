@@ -14,21 +14,29 @@ function AppContent() {
   const [showPopup, setShowPopup] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const generateLinuxCommand = (node, basePath = '.') => {
+  const generateLinuxCommand = (node, basePath = '') => {
     let commands = [];
     
     if (node.type === 'directory') {
-      const dirPath = basePath === '.' ? node.name : `${basePath}/${node.name}`;
-      if (node.name !== 'root') {
+      // For root, don't create a directory or add to path
+      if (node.name === 'root') {
+        if (node.children) {
+          node.children.forEach(child => {
+            commands = commands.concat(generateLinuxCommand(child, ''));
+          });
+        }
+      } else {
+        // For non-root directories, create the directory and process children
+        const dirPath = basePath ? `${basePath}/${node.name}` : node.name;
         commands.push(`mkdir -p "${dirPath}"`);
-      }
-      if (node.children) {
-        node.children.forEach(child => {
-          commands = commands.concat(generateLinuxCommand(child, node.name === 'root' ? '.' : dirPath));
-        });
+        if (node.children) {
+          node.children.forEach(child => {
+            commands = commands.concat(generateLinuxCommand(child, dirPath));
+          });
+        }
       }
     } else if (node.type === 'file') {
-      const filePath = `${basePath}/${node.name}`;
+      const filePath = basePath ? `${basePath}/${node.name}` : node.name;
       const content = (node.content || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/`/g, '\\`');
       commands.push(`cat > "${filePath}" << 'EOF'\n${content}\nEOF`);
     }
